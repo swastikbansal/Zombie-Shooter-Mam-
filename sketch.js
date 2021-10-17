@@ -1,116 +1,155 @@
-var bg,bgImg;
-var player, shooterImg, shooter_shooting;
-var zombie,zombieGroup,zombie_img;
-var bullet,bullet_img,bulletGroup;
+var bg, bgImg;
+var player, shooterImg, shooter_shooting, shooter_1shooting;
+var edges;
+var zombieImg, bulletImg, zombieGroup, bulletGroup;
+var hp, hp1Img, hp2Img, hp3Img, life = 3;
 var score = 0;
-var hr1_img,hr2_img,hr3_img,heart1,heart2,heart3;
+var gameState = "play";
+var winSound,loseSound,explosionSound
 
-function preload(){
-  
+function preload() {
+
   shooterImg = loadImage("assets/shooter_2.png");
   shooter_shooting = loadImage("assets/shooter_3.png");
-  zombie_img = loadImage("assets/zombie.png")
-  bullet_img = loadImage("assets/bullet.png")
-  bgImg = loadImage("assets/bg.jpg");
-  hr1_img = loadImage("assets/heart_1.png") 
-  hr2_img = loadImage("assets/heart_2.png")
-  hr3_img = loadImage("assets/heart_3.png")
+  zombieImg = loadImage("assets/zombie.png");
+  bulletImg = loadImage("assets/pngaaa.com-108539.png");
+
+  hp1Img = loadImage("assets/heart_1.png");
+  hp3Img = loadImage("assets/heart_3.png");
+  hp2Img = loadImage("assets/heart_2.png");
+
+  shooter_1shooting = loadImage("assets/shooter_1.png");
+  bgImg = loadImage("assets/dark-horrorhalloween-gravestone-background_42665-11.jpeg")
+  loseSound=loadSound("the-forest-of-good-and-evil-2947.mp3");
+  explosionSound=loadSound("assets/explosion.mp3");
 }
 
 function setup() {
-  
-  createCanvas(windowWidth,windowHeight);
 
-  //adding the background image
-  bg = createSprite(displayWidth/2-20,displayHeight/2-40,20,20);
-  bg.addImage(bgImg);
-  bg.scale = 1.2;
-  
-  //Zombei Group
-  zombieGroup = createGroup()
-  
+  createCanvas(windowWidth, windowHeight);
+  zombieGroup = createGroup();
+  bulletGroup = createGroup();
 
-  //creating the player sprite
   player = createSprite(displayWidth-1800, displayHeight-300, 50, 50);
-  player.addImage(shooterImg);
-  player.scale = 0.7;
-  player.debug = true;
-  player.setCollider("rectangle",0,0,230,470);
+  player.addImage(shooterImg)
+  player.scale = 0.8
+  player.debug = true
+  player.setCollider("rectangle", 0, 0, 300, 300)
 
-  
+  hp = createSprite(displayWidth / 2 + 810, displayHeight - 950, 30, 30);
+  hp.addImage(hp3Img)
+  hp.scale = 0.4;
 
 }
 
 function draw() {
-  background(bgImg); 
+  background(bgImg);
+  textSize(50)
+  fill("white")
+  text("Score : " + score, displayWidth / 2 + 720, displayHeight - 1000)
 
-  fill('red');
-  textSize(30) 
-  text("Score : "+score,displayWidth/1.2,displayHeight/20); 
+  if (gameState === 'play') {
+    
+    spawnZombies();
+
+    if (keyIsDown(38) /*&& player.y > displayHeight - 30*/) {
+      
+      player.velocityY = -10;
+
+    }
+    player.velocityY = player.velocityY + 0.8;
+
+    if (keyWentDown("space")) {
+
+      player.addImage(shooter_shooting);
+      bullets();
+      score = score + 1;
   
-  
-  //moving the player up and down and making the game mobile compatible using touches
-  if(keyDown("UP_ARROW")||touches.length>0){
-    player.y = player.y-30;
-  }
-
-  if(keyDown("DOWN_ARROW")||touches.length>0){
-  player.y = player.y+30;
-  }
-
-  //player goes back to original standing image once we stop pressing the space bar
-  else if(keyWentUp("space")){
-    player.addImage(shooterImg);
-  }
-  bulletGroup = createGroup()
-
-  //release bullets and change the image of shooter to shooting position when space is pressed
-  if(keyWentDown("space")){
-    player.addImage(shooter_shooting);
-    bullet = createSprite(player.x + 80,player.y-50,50,50);
-    bullet.addImage(bullet_img);
-    bullet.velocityX = 10;
-    bullet.debug = true;
-    bullet.setCollider("rectangle",0,0,100,100)
-    console.log(player.depth);
-    console.log(bullet.depth);
-    bullet.depth = player.depth;
-    bullet.scale = 0.02;
-    bulletGroup.add(bullet);
-  }
-
-  if (bulletGroup.isTouching(zombieGroup)) {
-    score += 1
-    for (i=0; i<zombieGroup.length; i++){ 
-      if (zombieGroup[i].isTouching(bulletGroup)){
-        bulletGroup.destroyEach();
-        zombieGroup[i].destroy();
-      }
     }
 
+  else if (keyWentUp("space")) {
+    player.addImage(shooterImg);
+
   }
 
-  //Creating Zombie Function
-  spawnZombie();
+  if (zombieGroup.isTouching(bulletGroup)) {
+    for(var i=0;i<zombieGroup.length;i++){     
+      
+      if(zombieGroup[i].isTouching(bulletGroup)){
+           zombieGroup[i].destroy();
+           bulletGroup.destroyEach();
+           explosionSound.play();
+    
+           score += 2;
+           } 
+     }
+    }
+    
+  if (zombieGroup.isTouching(player)) {
+    for(var i=0;i<zombieGroup.length;i++){     
+      
+      if(zombieGroup[i].isTouching(player)){
+          zombieGroup[i].destroy();
+          life-=1;
+       } 
+     
+     }
+  }
 
-  //Zombie Destroy and Score
+  if (life === 2) {
+    hp.addImage(hp2Img);
+  }
+  
+  if (life === 1) {
+    hp.addImage(hp1Img);
+
+  }
+
+  if (life === 0) {
+    gameState="end";
+   }
+ }
+
+  if (gameState==="end"){
+    hp.destroy();
+    player.addImage(shooter_1shooting);
+    player.rotation = -90;
+    
+    player.velocityY=0;
+    player.y=player.y+30;
+
+ textSize(100);
+ fill("red");
+
+text("YOU LOSE!",displayWidth/2,displayHeight/2);
+    loseSound.play();
+  }
+
+  edges = createEdgeSprites();
+  player.collide(edges[3]);
+
   drawSprites();
 
-}
-
-//Creating Zombie Function
-function spawnZombie() {
-  if (frameCount % 50 === 0) {
-    
-    zombie = createSprite(displayWidth,Math.round(random(displayHeight/6,displayHeight/3+100)),50,50);   
-    zombieGroup.add(zombie);
-    zombie.addImage(zombie_img);
-    zombie.setCollider("rectangle",0,0,450,1000)
-    console.log(zombie.depth)
-    zombie.velocityX = -5; 
-    zombie.scale = 0.3
-    //zombie.depth = bullet.depth;
-    zombie.debug = true;
   }
 
+function spawnZombies() {
+  if (frameCount % 100 == 0) {
+    var Random = random(displayHeight / 2 + 150, displayHeight - 200);
+    var zombie = createSprite(displayWidth - 20, Random, 10, 60);
+    console.log(Random);
+    zombie.velocityX = -10;
+    zombie.addImage(zombieImg);
+    zombie.scale = 0.3;
+    zombieGroup.add(zombie);
+    zombie.debug = true;
+    zombie.setCollider("rectangle", 0, 0, 600, 600);
+
+  }
+}
+function bullets() {
+  var bullet = createSprite(player.x + 165, player.y - 80, 50, 10);
+  bullet.velocityX = 10;
+  bullet.addImage(bulletImg);
+  bullet.scale = 0.1;
+  bulletGroup.add(bullet);
 }
